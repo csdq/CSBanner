@@ -1,0 +1,11 @@
+use_frameworks!
+
+target 'CSBanner_Example' do
+  pod 'CSBanner', :path => '../'
+
+  target 'CSBanner_Tests' do
+    inherit! :search_paths
+
+    
+  end
+end

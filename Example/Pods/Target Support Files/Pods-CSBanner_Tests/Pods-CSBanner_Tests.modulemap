@@ -1,0 +1,6 @@
+framework module Pods_CSBanner_Tests {
+  umbrella header "Pods-CSBanner_Tests-umbrella.h"
+
+  export *
+  module * { export * }
+}

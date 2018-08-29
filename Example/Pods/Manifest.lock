@@ -1,0 +1,16 @@
+PODS:
+  - CSBanner (1.0.0)
+
+DEPENDENCIES:
+  - CSBanner (from `../`)
+
+EXTERNAL SOURCES:
+  CSBanner:
+    :path: "../"
+
+SPEC CHECKSUMS:
+  CSBanner: 304b04f43402b3a5b3ef1795a94642e4dada93ef
+
+PODFILE CHECKSUM: adb15d10332422f55084061ba6171328c849c33a
+
+COCOAPODS: 1.5.3

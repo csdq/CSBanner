@@ -1,0 +1,6 @@
+framework module CSBanner {
+  umbrella header "CSBanner-umbrella.h"
+
+  export *
+  module * { export * }
+}
