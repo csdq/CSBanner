@@ -1,6 +1,6 @@
 //
-//  CSCarouselView.swift
-//  CSCarouselView
+//  CSBannerView.swift
+//  CSBannerView
 //
 //  Created by Mr.s on 2018/8/29.
 //  Copyright © 2018年 Mr.s. All rights reserved.
@@ -9,19 +9,31 @@
 import UIKit
 import Dispatch
 
-@objc class CSBannerView: UIView,UIScrollViewDelegate {
+@objc public class CSBannerView: UIView,UIScrollViewDelegate {
     //MARK: View
-    var scrollView : UIScrollView = UIScrollView()
-    var titleLabel : UILabel  = UILabel()
+    public var scrollView : UIScrollView = UIScrollView()
+    public var titleLabel : UILabel  = UILabel()
     var titleBgView : UIView = UIView()
+    public var bannerCount : Int {
+        set{
+            self.pageControl.numberOfPages = newValue
+        }
+        get{
+            return self.pageControl.numberOfPages
+        }
+    }
     var pageControl : UIPageControl = UIPageControl()
     //MARK: timer
     private var timer : DispatchSourceTimer?
-    var timeInterval = 3;
-    var secondTimeExecute : Bool = false
+    var timeInterval = 5;
+    var firstTimeExecute : Bool = true
     //MARK: closure & datasource
-    var fetchContentViewForIndex : ((NSInteger)->UIView)? = nil;
-    var fetchTitleForIndex : ((NSInteger)->String)? = nil;
+    
+    ///  get banner view for every page
+    public var fetchContentViewForIndex : ((NSInteger)->UIView)? = nil;
+    
+    /// get banner title for each page
+    public var fetchTitleForIndex : ((NSInteger)->String)? = nil;
     
     //MARK: init
     override init(frame: CGRect) {
@@ -39,11 +51,11 @@ import Dispatch
         self.viewInit(count: count ,fetchContentViewForIndex: fetchContentViewForIndex ,fetchTitleForIndex: fetchTitleForIndex)
     }
     
-    required init?(coder aDecoder: NSCoder) {
+    required public init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
     }
     
-    override func awakeFromNib() {
+    override public func awakeFromNib() {
         self.viewInit()
     }
     //MARK: sys
@@ -51,29 +63,36 @@ import Dispatch
         self.timer?.cancel()
         self.timer = nil
     }
-    override func layoutSubviews() {
+    override public func layoutSubviews() {
         let frame = self.frame;
         self.scrollView.setContentOffset(CGPoint.init(x: 1.0 * self.scrollView.frame.width, y: 0), animated: true)
         self.scrollView.frame = self.bounds;
         self.scrollView.contentSize = CGSize.init(width: frame.width * 3.0, height: frame.height)
         self.titleLabel.frame = CGRect(x: 8, y: frame.height - 30, width: frame.width - 8, height: 30)
         self.titleBgView.frame = CGRect(x: 0, y: frame.height - 30, width: frame.width, height: 30)
+        if self.firstTimeExecute{
+            self.scrollView.setContentOffset(CGPoint.init(x: 1.0 * self.scrollView.frame.width, y: 0), animated: false)
+            self.configContentView()
+        }
     }
     
     //MARK: Custom
     func timerInit(){
         if self.timer == nil{
             self.timer = DispatchSource.makeTimerSource(flags: [], queue: DispatchQueue.global())
-            self.timer?.schedule(deadline: DispatchTime.now(), repeating: DispatchTimeInterval.seconds(timeInterval), leeway: DispatchTimeInterval.milliseconds(1))
+            #if swift(>=4.0)
+            self.timer?.schedule(deadline: DispatchTime.now(), repeating: DispatchTimeInterval.seconds(timeInterval), leeway: DispatchTimeInterval.milliseconds(10))
+            #else
+            self.timer?.scheduleRepeating(deadline: DispatchTime.now(), interval: DispatchTimeInterval.seconds(timeInterval), leeway: DispatchTimeInterval.milliseconds(10))
+            #endif
             self.timer?.setEventHandler(handler: {
                 DispatchQueue.main.async {
-                    if self.secondTimeExecute {
+                    if !self.firstTimeExecute {
                         self.pageControl.currentPage = ((self.pageControl.currentPage + 1)%self.pageControl.numberOfPages);
                         self.scrollView.setContentOffset(CGPoint.init(x: 1.0 * self.scrollView.frame.width, y: 0), animated: true)
                         self.configContentView()
-                        
                     }else{
-                        self.secondTimeExecute = true
+                        self.firstTimeExecute = false
                     }
                 }
             })
@@ -143,17 +162,17 @@ import Dispatch
     }
     //MARK: delegate
     //MARK: ScrollView
-    func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+    public func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
         let idx = (NSInteger(scrollView.contentOffset.x / self.frame.width) - 1 + self.pageControl.currentPage + self.pageControl.numberOfPages)%self.pageControl.numberOfPages
         self.pageControl.currentPage = idx
         self.updateBannerView()
     }
     
-    func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+    public func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
         self.timer?.suspend()
     }
     
-    func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+    public func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
         self.timer?.resume()
     }
     

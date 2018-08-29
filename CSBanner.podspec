@@ -21,7 +21,7 @@ Pod::Spec.new do |s|
 A Simple Banner show with custom subclass instance of UIView
                        DESC
 
-  s.homepage         = 'https://github.com/stqemail@163.com/CSBanner'
+  s.homepage         = 'https://github.com/csdq/CSBanner'
   # s.screenshots     = 'www.example.com/screenshots_1', 'www.example.com/screenshots_2'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.author           = { 'Mr.s' => 'stqemail@163.com' }
