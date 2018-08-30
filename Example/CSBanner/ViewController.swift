@@ -31,6 +31,12 @@ class ViewController: UIViewController {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
     }
+    @IBAction func stopScroll(_ sender: Any) {
+        self.bannerView?.stopAutoScroll()
+    }
     
+    @IBAction func restartScroll(_ sender: Any) {
+        self.bannerView?.resumeAutoScroll()
+    }
 }
 

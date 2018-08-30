@@ -88,9 +88,14 @@ import Dispatch
             self.timer?.setEventHandler(handler: {
                 DispatchQueue.main.async {
                     if !self.firstTimeExecute {
-                        self.pageControl.currentPage = ((self.pageControl.currentPage + 1)%self.pageControl.numberOfPages);
-                        self.scrollView.setContentOffset(CGPoint.init(x: 1.0 * self.scrollView.frame.width, y: 0), animated: true)
-                        self.configContentView()
+                        UIView.animate(withDuration: 0.3, animations: {
+                            self.scrollView.setContentOffset(CGPoint.init(x: 2.0 * self.scrollView.frame.width, y: 0), animated: false)
+                        }, completion: { (finished) in
+                            //Caculate next page
+                            self.pageControl.currentPage = ((self.pageControl.currentPage + 1)%self.pageControl.numberOfPages);
+                            self.configContentView()
+                        })
+                        
                     }else{
                         self.firstTimeExecute = false
                     }
@@ -131,6 +136,27 @@ import Dispatch
         self.timerInit()
     }
     
+    //MARK: Public
+    public func stopAutoScroll(){
+        if let _ = self.timer{
+            if let _ = self.timer?.isCancelled{
+                
+            }else{
+                self.timer?.cancel()
+            }
+            self.timer = nil
+        }
+    }
+    
+    public func resumeAutoScroll(){
+        if let _ = self.timer{
+            
+        }else{
+            self.timerInit()
+        }
+    }
+    
+    //
     @objc func updateBannerView(){
         self.configContentView()
         scrollView.setContentOffset(CGPoint(x: 1.0 * self.frame.width, y: 0), animated: false)
@@ -145,7 +171,7 @@ import Dispatch
             //
             let preView = self.fetchContentViewForIndex!((self.pageControl.currentPage+self.pageControl.numberOfPages-1)%self.pageControl.numberOfPages)
             self.scrollView.addSubview(preView)
-            preView.frame = CGRect(x: 0, y: 0, width: frame.width, height: frame.height)
+            preView.frame = CGRect(x: 0.0 * frame.width, y: 0, width: frame.width, height: frame.height)
             //
             let currentView = self.fetchContentViewForIndex!(self.pageControl.currentPage)
             self.scrollView.addSubview(currentView)
@@ -159,6 +185,7 @@ import Dispatch
         if let _ = self.fetchTitleForIndex{
             self.titleLabel.text = self.fetchTitleForIndex!(self.pageControl.currentPage)
         }
+         self.scrollView.setContentOffset(CGPoint.init(x: 1.0 * self.scrollView.frame.width, y: 0), animated: false)
     }
     //MARK: delegate
     //MARK: ScrollView
