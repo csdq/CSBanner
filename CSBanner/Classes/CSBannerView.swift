@@ -169,17 +169,31 @@ import Dispatch
         if let _ = self.fetchContentViewForIndex{
             let frame = self.scrollView.bounds
             //
-            let preView = self.fetchContentViewForIndex!((self.pageControl.currentPage+self.pageControl.numberOfPages-1)%self.pageControl.numberOfPages)
-            self.scrollView.addSubview(preView)
-            preView.frame = CGRect(x: 0.0 * frame.width, y: 0, width: frame.width, height: frame.height)
-            //
-            let currentView = self.fetchContentViewForIndex!(self.pageControl.currentPage)
-            self.scrollView.addSubview(currentView)
-            currentView.frame = CGRect(x: 1.0 * frame.width, y: 0, width: frame.width, height: frame.height)
-            //
-            let nextView = self.fetchContentViewForIndex!((self.pageControl.currentPage+1)%self.pageControl.numberOfPages)
-            self.scrollView.addSubview(nextView)
-            nextView.frame = CGRect(x: 2.0 * frame.width, y: 0, width: frame.width, height: frame.height)
+            if(self.pageControl.numberOfPages == 0){
+                let preView = self.fetchContentViewForIndex!(0)
+                self.scrollView.addSubview(preView)
+                preView.frame = CGRect(x: 0.0 * frame.width, y: 0, width: frame.width, height: frame.height)
+                //
+                let currentView = self.fetchContentViewForIndex!(self.pageControl.currentPage)
+                self.scrollView.addSubview(currentView)
+                currentView.frame = CGRect(x: 1.0 * frame.width, y: 0, width: frame.width, height: frame.height)
+                //
+                let nextView = self.fetchContentViewForIndex!(0)
+                self.scrollView.addSubview(nextView)
+                nextView.frame = CGRect(x: 2.0 * frame.width, y: 0, width: frame.width, height: frame.height)
+            }else{
+                let preView = self.fetchContentViewForIndex!((self.pageControl.currentPage+self.pageControl.numberOfPages-1)%self.pageControl.numberOfPages)
+                self.scrollView.addSubview(preView)
+                preView.frame = CGRect(x: 0.0 * frame.width, y: 0, width: frame.width, height: frame.height)
+                //
+                let currentView = self.fetchContentViewForIndex!(self.pageControl.currentPage)
+                self.scrollView.addSubview(currentView)
+                currentView.frame = CGRect(x: 1.0 * frame.width, y: 0, width: frame.width, height: frame.height)
+                //
+                let nextView = self.fetchContentViewForIndex!((self.pageControl.currentPage+1)%self.pageControl.numberOfPages)
+                self.scrollView.addSubview(nextView)
+                nextView.frame = CGRect(x: 2.0 * frame.width, y: 0, width: frame.width, height: frame.height)
+            }
         }
         
         if let _ = self.fetchTitleForIndex{
@@ -190,8 +204,12 @@ import Dispatch
     //MARK: delegate
     //MARK: ScrollView
     public func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
-        let idx = (NSInteger(scrollView.contentOffset.x / self.frame.width) - 1 + self.pageControl.currentPage + self.pageControl.numberOfPages)%self.pageControl.numberOfPages
-        self.pageControl.currentPage = idx
+        if(self.pageControl.numberOfPages == 0){
+            self.pageControl.currentPage = 0;
+        }else{
+            let idx = (NSInteger(scrollView.contentOffset.x / self.frame.width) - 1 + self.pageControl.currentPage + self.pageControl.numberOfPages)%self.pageControl.numberOfPages
+            self.pageControl.currentPage = idx
+        }
         self.updateBannerView()
     }
     
