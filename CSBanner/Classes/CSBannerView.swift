@@ -14,7 +14,7 @@ import Dispatch
     public var scrollView : UIScrollView = UIScrollView()
     public var titleLabel : UILabel  = UILabel()
     var titleBgView : UIView = UIView()
-    public var bannerCount : Int {
+    @objc public var bannerCount : Int {
         set{
             self.pageControl.numberOfPages = newValue
         }
@@ -30,10 +30,10 @@ import Dispatch
     //MARK: closure & datasource
     
     ///  get banner view for every page
-    public var fetchContentViewForIndex : ((NSInteger)->UIView)? = nil;
+    @objc public var fetchContentViewForIndex : ((NSInteger)->UIView)? = nil;
     
     /// get banner title for each page
-    public var fetchTitleForIndex : ((NSInteger)->String)? = nil;
+    @objc public var fetchTitleForIndex : ((NSInteger)->String)? = nil;
     
     //MARK: init
     override init(frame: CGRect) {
