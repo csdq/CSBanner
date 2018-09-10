@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'CSBanner'
-  s.version          = '1.0.3'
+  s.version          = '1.0.4'
   s.summary          = 'Banner'
 
 # This description is used to generate tags and improve search results.
@@ -32,6 +32,7 @@ A Simple Banner show with custom subclass instance of UIView
 
   s.source_files = 'CSBanner/Classes/**/*'
   
+  s.swift_version = '4.1'
   # s.resource_bundles = {
   #   'CSBanner' => ['CSBanner/Assets/*.png']
   # }
