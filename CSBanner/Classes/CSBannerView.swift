@@ -92,7 +92,11 @@ import Dispatch
                             self.scrollView.setContentOffset(CGPoint.init(x: 2.0 * self.scrollView.frame.width, y: 0), animated: false)
                         }, completion: { (finished) in
                             //Caculate next page
+                            if(self.pageControl.numberOfPages == 0){
+                                self.pageControl.currentPage = 0;
+                            }else{
                             self.pageControl.currentPage = ((self.pageControl.currentPage + 1)%self.pageControl.numberOfPages);
+                            }
                             self.configContentView()
                         })
                         

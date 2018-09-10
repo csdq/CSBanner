@@ -13,7 +13,7 @@ class ViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.bannerView.bannerCount = 3;
+        self.bannerView.bannerCount = 0;
         self.bannerView.fetchContentViewForIndex = {(pageIndex)->UIView in
             let imgView = UIImageView()
             imgView.image = nil
@@ -23,7 +23,7 @@ class ViewController: UIViewController {
         }
         
         self.bannerView.fetchTitleForIndex = {(pageIndex)->String in
-            return ["ここは　example","It is an example","这是一个测试例子"][pageIndex]
+            return ["これは 　example","It is an example","这是一个测试例子"][pageIndex]
         }
     }
     
