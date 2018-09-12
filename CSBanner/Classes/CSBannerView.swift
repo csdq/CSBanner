@@ -25,7 +25,18 @@ import Dispatch
     var pageControl : UIPageControl = UIPageControl()
     //MARK: timer
     private var timer : DispatchSourceTimer?
-    var timeInterval = 5;
+    private var _timeInterval : Int = 5
+    @objc public var timeInterval : Int {
+        set{
+            _timeInterval = newValue;
+            destroyTimer()
+            timerInit()
+        }
+        
+        get{
+            return _timeInterval
+        }
+    }
     var firstTimeExecute : Bool = true
     //MARK: closure & datasource
     
@@ -60,8 +71,7 @@ import Dispatch
     }
     //MARK: sys
     deinit {
-        self.timer?.cancel()
-        self.timer = nil
+        destroyTimer()
     }
     override public func layoutSubviews() {
         let frame = self.frame;
@@ -81,25 +91,24 @@ import Dispatch
         if self.timer == nil{
             self.timer = DispatchSource.makeTimerSource(flags: [], queue: DispatchQueue.global())
             #if swift(>=4.0)
-            self.timer?.schedule(deadline: DispatchTime.now(), repeating: DispatchTimeInterval.seconds(timeInterval), leeway: DispatchTimeInterval.milliseconds(10))
+            self.timer?.schedule(deadline: DispatchTime.now(), repeating: DispatchTimeInterval.seconds(timeInterval), leeway: DispatchTimeInterval.milliseconds(100))
             #else
-            self.timer?.scheduleRepeating(deadline: DispatchTime.now(), interval: DispatchTimeInterval.seconds(timeInterval), leeway: DispatchTimeInterval.milliseconds(10))
+            self.timer?.scheduleRepeating(deadline: DispatchTime.now(), interval: DispatchTimeInterval.seconds(timeInterval), leeway: DispatchTimeInterval.milliseconds(100))
             #endif
             self.timer?.setEventHandler(handler: {
                 DispatchQueue.main.async {
                     if !self.firstTimeExecute {
-                        UIView.animate(withDuration: 0.3, animations: {
-                            self.scrollView.setContentOffset(CGPoint.init(x: 2.0 * self.scrollView.frame.width, y: 0), animated: false)
-                        }, completion: { (finished) in
-                            //Caculate next page
-                            if(self.pageControl.numberOfPages == 0){
-                                self.pageControl.currentPage = 0;
-                            }else{
-                            self.pageControl.currentPage = ((self.pageControl.currentPage + 1)%self.pageControl.numberOfPages);
+                        self.scrollView.setContentOffset(CGPoint.init(x: 2.0 * self.scrollView.frame.width, y: 0), animated: true)
+                        DispatchQueue.global(qos: DispatchQoS.QoSClass.background).asyncAfter(deadline: DispatchTime.now()+0.3, execute: {
+                            DispatchQueue.main.async {
+                                if(self.pageControl.numberOfPages == 0){
+                                    self.pageControl.currentPage = 0;
+                                }else{
+                                    self.pageControl.currentPage = ((self.pageControl.currentPage + 1)%self.pageControl.numberOfPages);
+                                }
+                                self.configContentView()
                             }
-                            self.configContentView()
                         })
-                        
                     }else{
                         self.firstTimeExecute = false
                     }
@@ -107,6 +116,11 @@ import Dispatch
             })
             self.timer?.resume()
         }
+    }
+    
+    func destroyTimer(){
+        self.timer?.cancel()
+        self.timer = nil
     }
     func viewInit(count : NSInteger = 0,fetchContentViewForIndex : ((NSInteger)->UIView)?=nil , fetchTitleForIndex : ((NSInteger)->String)?=nil){
         self.scrollView.delegate = self
@@ -122,7 +136,6 @@ import Dispatch
         self.titleLabel.font = UIFont.systemFont(ofSize: 12)
         self.titleLabel.textColor = UIColor.white
         self.titleLabel.backgroundColor = UIColor.clear
-        self.titleLabel.text = "载入中..."
         self.addSubview(self.titleLabel)
         //pageControl
         self.pageControl.currentPage = 0
@@ -203,7 +216,7 @@ import Dispatch
         if let _ = self.fetchTitleForIndex{
             self.titleLabel.text = self.fetchTitleForIndex!(self.pageControl.currentPage)
         }
-         self.scrollView.setContentOffset(CGPoint.init(x: 1.0 * self.scrollView.frame.width, y: 0), animated: false)
+        self.scrollView.setContentOffset(CGPoint.init(x: 1.0 * self.scrollView.frame.width, y: 0), animated: false)
     }
     //MARK: delegate
     //MARK: ScrollView

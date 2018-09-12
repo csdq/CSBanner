@@ -13,18 +13,20 @@ class ViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.bannerView.bannerCount = 0;
+        self.bannerView.bannerCount = 5;
         self.bannerView.fetchContentViewForIndex = {(pageIndex)->UIView in
             let imgView = UIImageView()
             imgView.image = nil
             imgView.tag = pageIndex
-            imgView.backgroundColor = [UIColor.red,UIColor.green,UIColor.blue][pageIndex]
+            imgView.backgroundColor = [UIColor.red,UIColor.green,UIColor.blue,UIColor.brown,UIColor.cyan][pageIndex]
             return imgView
         }
         
         self.bannerView.fetchTitleForIndex = {(pageIndex)->String in
-            return ["これは 　example","It is an example","这是一个测试例子"][pageIndex]
+            return ["これは 　example","It is an example","这是一个测试例子","Baner title BANNER TITLE TITLE","iOS","."][pageIndex]
         }
+//        change time inteval
+//        self.bannerView.timeInterval = 1;
     }
     
     override func didReceiveMemoryWarning() {
