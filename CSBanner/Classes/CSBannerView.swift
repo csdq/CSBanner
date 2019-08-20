@@ -7,236 +7,298 @@
 //
 
 import UIKit
-import Dispatch
 
-@objc public class CSBannerView: UIView,UIScrollViewDelegate {
-    //MARK: View
-    public var scrollView : UIScrollView = UIScrollView()
-    public var titleLabel : UILabel  = UILabel()
-    var titleBgView : UIView = UIView()
-    @objc public var bannerCount : Int {
-        set{
-            self.pageControl.numberOfPages = newValue
-        }
-        get{
-            return self.pageControl.numberOfPages
-        }
+@objc enum CSBannerStyle : Int {
+    case CSBannerStyleNormal
+    case CSBannerStyleCarousel
+}
+
+@objc public protocol CSBannerViewDelegate {
+    func didSelectItemForIndex(index : Int);
+}
+
+@objc public protocol CSBannerViewDatasource {
+    func itemViewForIndex(index : Int) -> UIView;
+}
+
+@objc public class CSBannerItemView: UIView {
+    @objc public var index : Int = 0
+    
+}
+
+@objc public class CSBannerView: UIView {
+    private let containView = UIView.init()
+    /// number of item
+    @objc public var itemCount : Int = 3
+    
+    var itemViewCount : Int = 4
+    
+    @objc var itemWidth : CGFloat = 260
+    @objc var itemHeight : CGFloat = 140
+    
+    @objc var autoScroll : Bool = true
+    
+    @objc var pagingEnable : Bool = true
+    
+    private var dragging : Bool = false
+    
+    @objc var scrolling : Bool = false
+    
+    @objc public var delegate : CSBannerViewDelegate?
+    
+    @objc public var datasource : CSBannerViewDatasource?
+    
+    @objc var currentIndex : Int = 0
+    
+    @objc var space : CGFloat = 44.0
+    
+    @objc var deltaX : CGFloat = 0.1
+    
+    @objc public var timeInterval : CGFloat = 5
+    
+    var animationTimeInterval : CGFloat = 1.0
+    
+    var waitCount : Int = 0
+    
+    var timer : Timer?
+    
+    var offset : CGPoint = .zero
+    let maxScale : CGFloat = 1.2
+    let minScale : CGFloat = 1.0
+    var upScale : CGFloat = 1.0
+    var downScale : CGFloat = 1.2
+    
+    var bannerItemViews : [CSBannerItemView] = []
+    
+    var lastTime : Double = 0
+    
+    public required init?(coder aDecoder: NSCoder) {
+        super.init(coder: aDecoder)
+        viewInit()
     }
-    var pageControl : UIPageControl = UIPageControl()
-    //MARK: timer
-    private var timer : DispatchSourceTimer?
-    private var _timeInterval : Int = 5
-    @objc public var timeInterval : Int {
-        set{
-            _timeInterval = newValue;
-            destroyTimer()
-            timerInit()
+    
+    func viewInit(){
+        timer = Timer.scheduledTimer(timeInterval: 1.0/60.0, target: self, selector: #selector(updateItemViews), userInfo: nil, repeats: true)
+        defer {
+            RunLoop.main.add(timer!, forMode: .default)
+            RunLoop.main.add(timer!, forMode: .tracking)
         }
         
-        get{
-            return _timeInterval
-        }
-    }
-    var firstTimeExecute : Bool = true
-    //MARK: closure & datasource
-    
-    ///  get banner view for every page
-    @objc public var fetchContentViewForIndex : ((NSInteger)->UIView)? = nil;
-    
-    /// get banner title for each page
-    @objc public var fetchTitleForIndex : ((NSInteger)->String)? = nil;
-    
-    //MARK: init
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        self.viewInit()
-    }
-    
-    init(_ count : NSInteger) {
-        super.init(frame: CGRect.zero)
-        self.viewInit(count: count)
-    }
-    
-    init(_ count : NSInteger, fetchContentViewForIndex : ((NSInteger)->UIView)? , fetchTitleForIndex : ((NSInteger)->String)?) {
-        super.init(frame: CGRect.zero)
-        self.viewInit(count: count ,fetchContentViewForIndex: fetchContentViewForIndex ,fetchTitleForIndex: fetchTitleForIndex)
-    }
-    
-    required public init?(coder aDecoder: NSCoder) {
-        super.init(coder: aDecoder)
-    }
-    
-    override public func awakeFromNib() {
-        self.viewInit()
-    }
-    //MARK: sys
-    deinit {
-        destroyTimer()
-    }
-    override public func layoutSubviews() {
-        let frame = self.frame;
-        self.scrollView.setContentOffset(CGPoint.init(x: 1.0 * self.scrollView.frame.width, y: 0), animated: true)
-        self.scrollView.frame = self.bounds;
-        self.scrollView.contentSize = CGSize.init(width: frame.width * 3.0, height: frame.height)
-        self.titleLabel.frame = CGRect(x: 8, y: frame.height - 30, width: frame.width - 8, height: 30)
-        self.titleBgView.frame = CGRect(x: 0, y: frame.height - 30, width: frame.width, height: 30)
-        if self.firstTimeExecute{
-            self.scrollView.setContentOffset(CGPoint.init(x: 1.0 * self.scrollView.frame.width, y: 0), animated: false)
-            self.configContentView()
+        addSubview(containView)
+        containView.translatesAutoresizingMaskIntoConstraints = false
+        addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "V:|-0-[view]-0-|", options: NSLayoutConstraint.FormatOptions.alignAllCenterY, metrics: nil, views: ["view":containView]))
+        addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "H:|-0-[view]-0-|", options: NSLayoutConstraint.FormatOptions.alignAllCenterX, metrics: nil, views: ["view":containView]))
+        
+        let panGes = UIPanGestureRecognizer.init(target: self, action: #selector(didPan(pan:)))
+        containView.addGestureRecognizer(panGes)
+        
+        let tapGes = UITapGestureRecognizer.init(target: self, action: #selector(didTap(tap:)))
+        containView.addGestureRecognizer(tapGes)
+        
+        if let _ = self.datasource{
+            reloadData()
         }
     }
     
-    //MARK: Custom
-    func timerInit(){
-        if self.timer == nil{
-            self.timer = DispatchSource.makeTimerSource(flags: [], queue: DispatchQueue.global())
-            #if swift(>=4.0)
-            self.timer?.schedule(deadline: DispatchTime.now(), repeating: DispatchTimeInterval.seconds(timeInterval), leeway: DispatchTimeInterval.milliseconds(100))
-            #else
-            self.timer?.scheduleRepeating(deadline: DispatchTime.now(), interval: DispatchTimeInterval.seconds(timeInterval), leeway: DispatchTimeInterval.milliseconds(100))
-            #endif
-            self.timer?.setEventHandler(handler: {
-                DispatchQueue.main.async {
-                    if !self.firstTimeExecute {
-                        self.scrollView.setContentOffset(CGPoint.init(x: 2.0 * self.scrollView.frame.width, y: 0), animated: true)
-                        DispatchQueue.global(qos: DispatchQoS.QoSClass.background).asyncAfter(deadline: DispatchTime.now()+0.3, execute: {
-                            DispatchQueue.main.async {
-                                if(self.pageControl.numberOfPages == 0){
-                                    self.pageControl.currentPage = 0;
-                                }else{
-                                    self.pageControl.currentPage = ((self.pageControl.currentPage + 1)%self.pageControl.numberOfPages);
-                                }
-                                self.configContentView()
-                            }
-                        })
-                    }else{
-                        self.firstTimeExecute = false
-                    }
+    public override func layoutSubviews() {
+        super.layoutSubviews()
+        var i = 0
+        while i < itemViewCount {
+            let frame = CGRect.init(x: 0, y: 0, width: itemWidth, height: itemHeight)
+            let view = loadViewForIndex(index: i)
+            let bannerView = CSBannerItemView()
+            bannerView.index = i;
+            bannerView.addSubview(view)
+            bannerView.frame = frame
+            bannerView.clipsToBounds = true
+            bannerView.layer.cornerRadius = 4.0
+            bannerView.layer.shadowColor = UIColor.black.cgColor
+            bannerView.layer.shadowOpacity = 0.7
+            bannerView.layer.shadowRadius = 45
+            bannerView.layer.shadowOffset = CGSize.init(width: 1.0, height: 1.0)
+            bannerView.layer.borderWidth = 1.0
+            containView.addSubview(bannerView)
+            if(itemViewCount - 1 == i){
+                bannerView.center = CGPoint.init(x: self.frame.size.width/2.0 - itemWidth - space, y: self.frame.size.height/2.0)
+                bannerItemViews.insert(bannerView, at: 0)
+            }else{
+                bannerView.center = CGPoint.init(x: (self.frame.size.width/2.0 + CGFloat(i) * (itemWidth + space)), y: self.frame.size.height/2.0)
+                if(i == 0){
+                    bannerView.layer.transform = CATransform3DScale(CATransform3DIdentity, maxScale, maxScale, 1)
+                    containView.bringSubviewToFront(bannerView)
+                }
+                bannerItemViews.append(bannerView)
+            }
+            i += 1
+        }
+    }
+    
+    func easeInOut(time:Double) -> Double{
+        return (time < 0.5) ? 0.5 * pow(time * 2.0, 3.0) : 0.5 * pow(time * 2.0 - 2.0, 3.0) + 1.0;
+    }
+    
+    @objc func updateItemViews(){
+        if(dragging){
+            //
+            return
+        }
+        CATransaction.begin()
+        ///
+        let currentTime = CACurrentMediaTime()
+        //        let delta = easeInOut(time: (currentTime - lastTime))
+        lastTime = currentTime
+        
+        if(waitCount <= Int(timeInterval * 60.0)){
+            //no animation
+        }else if(waitCount > Int(timeInterval * 60.0)
+            && waitCount <= (Int(timeInterval + animationTimeInterval) * 60)){
+            containView.bringSubviewToFront(bannerItemViews[1])
+            //animation
+            offset.x = offset.x - (itemWidth + space)/(animationTimeInterval * 60.0)
+            //min(2.0 , 1.0 + CGFloat(delta) * (itemWidth + space)/60.0)
+            upScale = min(maxScale,upScale + maxScale/(animationTimeInterval * 60.0))
+            downScale = max(minScale,downScale - (maxScale - minScale)/(animationTimeInterval * 60.0))
+            
+            var transform = CATransform3DIdentity
+            transform = CATransform3DTranslate(transform, offset.x, 0, 0)
+            bannerItemViews[0].layer.transform = transform
+            bannerItemViews[1].layer.transform = CATransform3DTranslate(CATransform3DScale(CATransform3DIdentity, downScale, downScale, 1) , offset.x / downScale, 0, 0)
+            bannerItemViews[2].layer.transform = CATransform3DTranslate(CATransform3DScale(CATransform3DIdentity, upScale, upScale, 1), offset.x/upScale, 0, 0)
+            bannerItemViews[3].layer.transform = transform
+        }else{
+            //change Index
+            waitCount = -1;
+            upScale = minScale
+            downScale = maxScale
+            
+            let item0 = bannerItemViews[0]
+            let item1 = bannerItemViews[1]
+            let item2 = bannerItemViews[2]
+            let item3 = bannerItemViews[3]
+            //
+            
+            let transform = item3.layer.transform
+            item0.center = CGPoint.init(x: item3.center.x + itemWidth + space, y: item3.center.y)
+            item0.layer.transform = CATransform3DTranslate(transform, transform.m11 + space + itemWidth, 0, 0)
+            bannerItemViews = [item1,item2,item3,item0]
+            
+            var i = 0
+            while i < bannerItemViews.count {
+                let view = bannerItemViews[i]
+                view.center = CGPoint.init(x: self.frame.size.width/2.0 + (CGFloat(i)-1.0) * (itemWidth + space), y: self.frame.size.height/2.0)
+                if(i == 1){
+                    view.layer.transform = CATransform3DScale(CATransform3DIdentity, maxScale, maxScale, 1)
+                }else{
+                    view.layer.transform = CATransform3DIdentity
+                }
+                i=i+1
+            }
+            offset = .zero
+            
+            //load 4th item view
+            currentIndex = (currentIndex + 1)%itemCount
+            item0.subviews.forEach{$0.removeFromSuperview()}
+            let newIndex = (currentIndex + 2)%itemCount;
+            let newView = loadViewForIndex(index: newIndex)
+            newView.frame = item0.bounds
+            item0.addSubview(newView)
+            item0.index = newIndex
+        }
+        
+        waitCount = waitCount + 1
+        //
+        CATransaction.commit()
+    }
+    
+    func transView(view : UIView, toIndex:Int){
+        CATransaction.begin()
+        
+        CATransaction.commit()
+        waitCount = 0
+    }
+    
+    @objc func didPan(pan : UIPanGestureRecognizer){
+        switch pan.state {
+        case .began:
+            dragging = true
+            break;
+        case .changed:
+            let x = pan.translation(in: self).x
+            CATransaction.begin()
+            bannerItemViews.forEach({ (itemView) in
+                if itemView.index == currentIndex{
+                    itemView.layer.transform = CATransform3DTranslate(CATransform3DIdentity, itemView.layer.transform.m11 + x, 0, 0)
+                }else{
+                    itemView.layer.transform = CATransform3DTranslate(CATransform3DIdentity, itemView.layer.transform.m11 + x, 0, 0)
                 }
             })
-            self.timer?.resume()
-        }
-    }
-    
-    func destroyTimer(){
-        self.timer?.cancel()
-        self.timer = nil
-    }
-    func viewInit(count : NSInteger = 0,fetchContentViewForIndex : ((NSInteger)->UIView)?=nil , fetchTitleForIndex : ((NSInteger)->String)?=nil){
-        self.scrollView.delegate = self
-        self.scrollView.isPagingEnabled = true
-        self.scrollView.showsVerticalScrollIndicator = false
-        self.scrollView.showsHorizontalScrollIndicator = false
-        self.scrollView.setContentOffset(CGPoint.init(x: 1.0 * self.scrollView.frame.width, y: 0), animated: false)
-        self.addSubview(self.scrollView)
-        
-        self.titleBgView.backgroundColor = UIColor.black.withAlphaComponent(0.3)
-        self.addSubview(titleBgView)
-        //label
-        self.titleLabel.font = UIFont.systemFont(ofSize: 12)
-        self.titleLabel.textColor = UIColor.white
-        self.titleLabel.backgroundColor = UIColor.clear
-        self.addSubview(self.titleLabel)
-        //pageControl
-        self.pageControl.currentPage = 0
-        self.pageControl.numberOfPages = count
-        self.pageControl.addTarget(self, action: #selector(updateBannerView), for: UIControlEvents.valueChanged)
-        self.pageControl.tintColor = UIColor.white
-        self.addSubview(self.pageControl)
-        self.pageControl.translatesAutoresizingMaskIntoConstraints = false
-        self.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "H:[pageControl(>=80)]-8-|", options: NSLayoutFormatOptions.alignAllTrailing, metrics: nil, views: ["pageControl":self.pageControl]))
-        self.addConstraints(NSLayoutConstraint.constraints(withVisualFormat: "V:[pageControl(==30)]-0-|", options: NSLayoutFormatOptions.alignAllTrailing, metrics: nil, views: ["pageControl":self.pageControl]))
-        
-        self.fetchContentViewForIndex = fetchContentViewForIndex
-        self.fetchTitleForIndex = fetchTitleForIndex
-        
-        self.timerInit()
-    }
-    
-    //MARK: Public
-    public func stopAutoScroll(){
-        if let _ = self.timer{
-            if let _ = self.timer?.isCancelled{
-                
-            }else{
-                self.timer?.cancel()
-            }
-            self.timer = nil
-        }
-    }
-    
-    public func resumeAutoScroll(){
-        if let _ = self.timer{
             
-        }else{
-            self.timerInit()
+            
+            CATransaction.commit()
+            break;
+        case .failed:fallthrough
+        case .cancelled:fallthrough
+        case .ended:
+            //TODO: pagingenable？？
+            dragging = false
+            break;
+        default:
+            break;
         }
     }
     
-    //
-    @objc func updateBannerView(){
-        self.configContentView()
-        scrollView.setContentOffset(CGPoint(x: 1.0 * self.frame.width, y: 0), animated: false)
-    }
-    
-    func configContentView(){
-        self.scrollView.subviews.forEach { (subView) in
-            subView.removeFromSuperview()
-        }
-        if let _ = self.fetchContentViewForIndex{
-            let frame = self.scrollView.bounds
-            //
-            if(self.pageControl.numberOfPages == 0){
-                let preView = self.fetchContentViewForIndex!(0)
-                self.scrollView.addSubview(preView)
-                preView.frame = CGRect(x: 0.0 * frame.width, y: 0, width: frame.width, height: frame.height)
-                //
-                let currentView = self.fetchContentViewForIndex!(self.pageControl.currentPage)
-                self.scrollView.addSubview(currentView)
-                currentView.frame = CGRect(x: 1.0 * frame.width, y: 0, width: frame.width, height: frame.height)
-                //
-                let nextView = self.fetchContentViewForIndex!(0)
-                self.scrollView.addSubview(nextView)
-                nextView.frame = CGRect(x: 2.0 * frame.width, y: 0, width: frame.width, height: frame.height)
-            }else{
-                let preView = self.fetchContentViewForIndex!((self.pageControl.currentPage+self.pageControl.numberOfPages-1)%self.pageControl.numberOfPages)
-                self.scrollView.addSubview(preView)
-                preView.frame = CGRect(x: 0.0 * frame.width, y: 0, width: frame.width, height: frame.height)
-                //
-                let currentView = self.fetchContentViewForIndex!(self.pageControl.currentPage)
-                self.scrollView.addSubview(currentView)
-                currentView.frame = CGRect(x: 1.0 * frame.width, y: 0, width: frame.width, height: frame.height)
-                //
-                let nextView = self.fetchContentViewForIndex!((self.pageControl.currentPage+1)%self.pageControl.numberOfPages)
-                self.scrollView.addSubview(nextView)
-                nextView.frame = CGRect(x: 2.0 * frame.width, y: 0, width: frame.width, height: frame.height)
+    @objc func didTap(tap : UITapGestureRecognizer){
+        if let _ = delegate{
+            //TODO:确定 index
+            let pt = tap.location(in: containView)
+            if let itemView = itemViewAtPoint(pt: pt){
+                delegate?.didSelectItemForIndex(index: itemView.index)
             }
         }
+    }
+    
+    func itemViewAtPoint(pt:CGPoint) -> CSBannerItemView?{
+        var i = 0
+        while i < bannerItemViews.count{
+            if let _ = bannerItemViews[i].layer.hitTest(pt){
+                return bannerItemViews[i]
+            }
+            i += 1
+        }
+        return nil
+    }
+    
+    @objc public func reloadData(){
         
-        if let _ = self.fetchTitleForIndex{
-            self.titleLabel.text = self.fetchTitleForIndex!(self.pageControl.currentPage)
+        /// reset item count
+        
+        //        containView.subviews.forEach {$0.removeFromSuperview()}
+        ///load view
+        // 6 7 8 9 0 1 2 3 4 5
+        ///
+        //
+        //        view0.frame = bannerView0.bounds
+        
+        /// reload view
+    }
+    
+    func loadViewForIndex(index:Int)->UIView{
+        var view : UIView?
+        if let _ = datasource{
+            view = datasource!.itemViewForIndex(index: index)
         }
-        self.scrollView.setContentOffset(CGPoint.init(x: 1.0 * self.scrollView.frame.width, y: 0), animated: false)
-    }
-    //MARK: delegate
-    //MARK: ScrollView
-    public func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
-        if(self.pageControl.numberOfPages == 0){
-            self.pageControl.currentPage = 0;
-        }else{
-            let idx = (NSInteger(scrollView.contentOffset.x / self.frame.width) - 1 + self.pageControl.currentPage + self.pageControl.numberOfPages)%self.pageControl.numberOfPages
-            self.pageControl.currentPage = idx
+        if view == nil {
+            view = UIView.init()
         }
-        self.updateBannerView()
+        view!.autoresizingMask = UIView.AutoresizingMask(rawValue: UIView.AutoresizingMask.flexibleWidth.rawValue | UIView.AutoresizingMask.flexibleHeight.rawValue)
+        return view!
     }
     
-    public func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
-        self.timer?.suspend()
+    deinit {
+        if let _ = timer{
+            timer!.invalidate()
+            timer = nil
+        }
     }
-    
-    public func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
-        self.timer?.resume()
-    }
-    
 }
 

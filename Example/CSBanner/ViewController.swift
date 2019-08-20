@@ -8,37 +8,46 @@
 
 import UIKit
 import CSBanner
-class ViewController: UIViewController {
+class ViewController: UIViewController,CSBannerViewDatasource,CSBannerViewDelegate {
     @IBOutlet weak var bannerView: CSBannerView!
     
+    let testView = UIView(frame: CGRect.init(x: 0, y: 300, width: 20, height: 20))
+    let delta = 1
+    var timer : Timer?
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.bannerView.bannerCount = 5;
-        self.bannerView.fetchContentViewForIndex = {(pageIndex)->UIView in
-            let imgView = UIImageView()
-            imgView.image = nil
-            imgView.tag = pageIndex
-            imgView.backgroundColor = [UIColor.red,UIColor.green,UIColor.blue,UIColor.brown,UIColor.cyan][pageIndex]
-            return imgView
-        }
-        
-        self.bannerView.fetchTitleForIndex = {(pageIndex)->String in
-            return ["これは 　example","It is an example","这是一个测试例子","Baner title BANNER TITLE TITLE","iOS","."][pageIndex]
-        }
-//        change time inteval
-//        self.bannerView.timeInterval = 1;
+        bannerView.itemCount = 10
+        bannerView.datasource = self
+        bannerView.delegate = self
+        bannerView.reloadData()
     }
     
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
+        
         // Dispose of any resources that can be recreated.
     }
+    
+    
     @IBAction func stopScroll(_ sender: Any) {
-        self.bannerView?.stopAutoScroll()
+
     }
     
     @IBAction func restartScroll(_ sender: Any) {
-        self.bannerView?.resumeAutoScroll()
+        
+    }
+    
+    //
+    func itemViewForIndex(index: Int) -> UIView {
+        let lb = UILabel.init()
+        lb.text = "\(index)"
+        lb.font = .systemFont(ofSize: 40)
+        lb.textAlignment = .center
+        return lb
+    }
+    
+    func didSelectItemForIndex(index: Int) {
+        print("select \(index)")
     }
 }
 
