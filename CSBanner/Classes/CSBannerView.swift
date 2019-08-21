@@ -30,11 +30,13 @@ import UIKit
     private let containView = UIView.init()
     /// number of item
     @objc public var itemCount : Int = 3
+    @objc public var timeInterval : CGFloat = 5
+    @objc public var itemWidth : CGFloat = 260
+    @objc public var itemHeight : CGFloat = 140
+    @objc public var space : CGFloat = 44.0
+    
     
     var itemViewCount : Int = 4
-    
-    @objc var itemWidth : CGFloat = 260
-    @objc var itemHeight : CGFloat = 140
     
     @objc var autoScroll : Bool = true
     
@@ -50,11 +52,6 @@ import UIKit
     
     @objc var currentIndex : Int = 0
     
-    @objc var space : CGFloat = 44.0
-    
-    @objc var deltaX : CGFloat = 0.1
-    
-    @objc public var timeInterval : CGFloat = 5
     
     var animationTimeInterval : CGFloat = 1.0
     
@@ -68,12 +65,22 @@ import UIKit
     var upScale : CGFloat = 1.0
     var downScale : CGFloat = 1.2
     
+    var dragOffset : CGPoint = .zero
+    var lastDragOffset : CGPoint = .zero
+    
+    
     var bannerItemViews : [CSBannerItemView] = []
     
     var lastTime : Double = 0
+    var readyToLoadNewItemView : Bool = false
     
     public required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
+        viewInit()
+    }
+    
+    public override init(frame: CGRect) {
+        super.init(frame: frame)
         viewInit()
     }
     
@@ -110,13 +117,15 @@ import UIKit
             bannerView.index = i;
             bannerView.addSubview(view)
             bannerView.frame = frame
-            bannerView.clipsToBounds = true
-            bannerView.layer.cornerRadius = 4.0
-            bannerView.layer.shadowColor = UIColor.black.cgColor
-            bannerView.layer.shadowOpacity = 0.7
-            bannerView.layer.shadowRadius = 45
-            bannerView.layer.shadowOffset = CGSize.init(width: 1.0, height: 1.0)
-            bannerView.layer.borderWidth = 1.0
+//            bannerView.clipsToBounds = true
+//            bannerView.backgroundColor = .clear
+//            bannerView.layer.cornerRadius = 6.0
+//            bannerView.layer.shadowColor = UIColor.lightGray.cgColor
+//            bannerView.layer.shadowOpacity = 0.7
+//            bannerView.layer.shadowRadius = 6.0
+//            bannerView.layer.borderWidth = 2;
+//            bannerView.layer.shadowOffset = CGSize.init(width: 1.0, height: 1.0)
+//            bannerView.layer.borderWidth = 1.0
             containView.addSubview(bannerView)
             if(itemViewCount - 1 == i){
                 bannerView.center = CGPoint.init(x: self.frame.size.width/2.0 - itemWidth - space, y: self.frame.size.height/2.0)
@@ -138,108 +147,175 @@ import UIKit
     }
     
     @objc func updateItemViews(){
-        if(dragging){
-            //
-            return
-        }
         CATransaction.begin()
         ///
         let currentTime = CACurrentMediaTime()
         //        let delta = easeInOut(time: (currentTime - lastTime))
         lastTime = currentTime
         
-        if(waitCount <= Int(timeInterval * 60.0)){
-            //no animation
-        }else if(waitCount > Int(timeInterval * 60.0)
-            && waitCount <= (Int(timeInterval + animationTimeInterval) * 60)){
-            containView.bringSubviewToFront(bannerItemViews[1])
-            //animation
-            offset.x = offset.x - (itemWidth + space)/(animationTimeInterval * 60.0)
-            //min(2.0 , 1.0 + CGFloat(delta) * (itemWidth + space)/60.0)
-            upScale = min(maxScale,upScale + maxScale/(animationTimeInterval * 60.0))
-            downScale = max(minScale,downScale - (maxScale - minScale)/(animationTimeInterval * 60.0))
-            
-            var transform = CATransform3DIdentity
-            transform = CATransform3DTranslate(transform, offset.x, 0, 0)
-            bannerItemViews[0].layer.transform = transform
-            bannerItemViews[1].layer.transform = CATransform3DTranslate(CATransform3DScale(CATransform3DIdentity, downScale, downScale, 1) , offset.x / downScale, 0, 0)
-            bannerItemViews[2].layer.transform = CATransform3DTranslate(CATransform3DScale(CATransform3DIdentity, upScale, upScale, 1), offset.x/upScale, 0, 0)
-            bannerItemViews[3].layer.transform = transform
-        }else{
-            //change Index
-            waitCount = -1;
-            upScale = minScale
-            downScale = maxScale
-            
-            let item0 = bannerItemViews[0]
-            let item1 = bannerItemViews[1]
-            let item2 = bannerItemViews[2]
-            let item3 = bannerItemViews[3]
+        if(dragging){
             //
+            let delta = dragOffset.x - lastDragOffset.x
+            offset.x = offset.x + delta
+            var transform = CATransform3DIdentity
             
-            let transform = item3.layer.transform
-            item0.center = CGPoint.init(x: item3.center.x + itemWidth + space, y: item3.center.y)
-            item0.layer.transform = CATransform3DTranslate(transform, transform.m11 + space + itemWidth, 0, 0)
-            bannerItemViews = [item1,item2,item3,item0]
+            let pageWidth = offset.x <= 0 ? (itemWidth + space) : -(itemWidth + space)
             
-            var i = 0
-            while i < bannerItemViews.count {
-                let view = bannerItemViews[i]
-                view.center = CGPoint.init(x: self.frame.size.width/2.0 + (CGFloat(i)-1.0) * (itemWidth + space), y: self.frame.size.height/2.0)
-                if(i == 1){
-                    view.layer.transform = CATransform3DScale(CATransform3DIdentity, maxScale, maxScale, 1)
-                }else{
-                    view.layer.transform = CATransform3DIdentity
+            if fabsf(Float(offset.x)) > Float(pageWidth){
+                
+                //load next
+                waitCount = -1;
+                upScale = minScale
+                downScale = maxScale
+                
+                let item0 = bannerItemViews[0]
+                let item1 = bannerItemViews[1]
+                let item2 = bannerItemViews[2]
+                let item3 = bannerItemViews[3]
+                
+                let transform = item3.layer.transform
+                item0.center = CGPoint.init(x: item3.center.x + pageWidth, y: item3.center.y)
+                item0.layer.transform = CATransform3DTranslate(transform, transform.m11 + pageWidth, 0, 0)
+                bannerItemViews = [item1,item2,item3,item0]
+                
+                
+                offset.x += pageWidth
+                dragOffset.x += pageWidth
+                lastDragOffset.x += pageWidth
+                
+                var i = 0
+                while i < bannerItemViews.count {
+                    let view = bannerItemViews[i]
+                    view.center = CGPoint.init(x: self.frame.size.width/2.0 + CGFloat(i-1) * pageWidth, y: self.frame.size.height/2.0)
+//                    if(i == 1){
+//                        view.layer.transform = CATransform3DScale(CATransform3DIdentity, maxScale, maxScale, 1)
+//                    }else{
+                        view.layer.transform = CATransform3DIdentity//CATransform3DTranslate(CATransform3DIdentity, view.layer.transform.m11 + pageWidth, 0, 0)
+//                    }
+                    i=i+1
                 }
-                i=i+1
+//                dragOffset = .zero
+//                lastDragOffset = .zero
+                
+                var nextIndex = 0
+                if offset.x < 0{
+                    currentIndex = (currentIndex + 1)%itemCount
+                    nextIndex = (currentIndex + 2)%itemCount
+                }else{
+                    currentIndex = (itemCount + currentIndex - 1)%itemCount
+                    nextIndex = (itemCount + currentIndex - 2)%itemCount
+                }
+                //load 4th item view
+                //载入时机有问题 只有三张时，会造成左侧图，即第1消失----预先移动到了第四
+//                if(fabs(offset.x) > Float(itemWidth/2.0 + space)){
+                    bannerItemViews.last!.subviews.forEach{$0.removeFromSuperview()}
+                    let newIndex = nextIndex;
+                    let newView = loadViewForIndex(index: newIndex)
+                    newView.frame = bannerItemViews.last!.bounds
+                    bannerItemViews.last!.addSubview(newView)
+                    bannerItemViews.last!.index = newIndex
+//                }
+                
+            }else{
+                transform = CATransform3DTranslate(transform, offset.x, 0, 0)
+                bannerItemViews[0].layer.transform = transform
+                bannerItemViews[1].layer.transform = CATransform3DTranslate(CATransform3DScale(CATransform3DIdentity, downScale, downScale, 1) , offset.x / downScale, 0, 0)
+                bannerItemViews[2].layer.transform = CATransform3DTranslate(CATransform3DScale(CATransform3DIdentity, upScale, upScale, 1), offset.x/upScale, 0, 0)
+                bannerItemViews[3].layer.transform = transform                
             }
-            offset = .zero
             
-            //load 4th item view
-            currentIndex = (currentIndex + 1)%itemCount
-            item0.subviews.forEach{$0.removeFromSuperview()}
-            let newIndex = (currentIndex + 2)%itemCount;
-            let newView = loadViewForIndex(index: newIndex)
-            newView.frame = item0.bounds
-            item0.addSubview(newView)
-            item0.index = newIndex
+            lastDragOffset = dragOffset
+        }else{
+            if(waitCount <= Int(timeInterval * 60.0)){
+                //no animation
+            }else if(waitCount > Int(timeInterval * 60.0)
+                && waitCount <= (Int(timeInterval + animationTimeInterval) * 60)){
+                containView.bringSubviewToFront(bannerItemViews[1])
+                //animation
+                offset.x = offset.x - (itemWidth + space)/(animationTimeInterval * 60.0)
+                //min(2.0 , 1.0 + CGFloat(delta) * (itemWidth + space)/60.0)
+                upScale = min(maxScale,upScale + maxScale/(animationTimeInterval * 60.0))
+                downScale = max(minScale,downScale - (maxScale - minScale)/(animationTimeInterval * 60.0))
+                
+                var transform = CATransform3DIdentity
+                transform = CATransform3DTranslate(transform, offset.x, 0, 0)
+                bannerItemViews[0].layer.transform = transform
+                bannerItemViews[1].layer.transform = CATransform3DTranslate(CATransform3DScale(CATransform3DIdentity, downScale, downScale, 1) , offset.x / downScale, 0, 0)
+                bannerItemViews[2].layer.transform = CATransform3DTranslate(CATransform3DScale(CATransform3DIdentity, upScale, upScale, 1), offset.x/upScale, 0, 0)
+                bannerItemViews[3].layer.transform = transform
+                
+                if(readyToLoadNewItemView && (fabsf(Float(offset.x)) > Float(itemWidth))){
+                    bannerItemViews.last!.subviews.forEach{$0.removeFromSuperview()}
+                    let newIndex = (currentIndex+2)%itemCount;
+                    let newView = loadViewForIndex(index: newIndex)
+                    newView.frame = bannerItemViews.last!.bounds
+                    bannerItemViews.last!.addSubview(newView)
+                    bannerItemViews.last!.index = newIndex
+                    readyToLoadNewItemView = false
+                }
+            }else{
+                //change Index
+                waitCount = -1;
+                upScale = minScale
+                downScale = maxScale
+                
+                let item0 = bannerItemViews[0]
+                let item1 = bannerItemViews[1]
+                let item2 = bannerItemViews[2]
+                let item3 = bannerItemViews[3]
+                //
+                
+                let transform = item3.layer.transform
+                item0.center = CGPoint.init(x: item3.center.x + itemWidth + space, y: item3.center.y)
+                item0.layer.transform = CATransform3DTranslate(transform, transform.m11 + space + itemWidth, 0, 0)
+                bannerItemViews = [item1,item2,item3,item0]
+                
+                var i = 0
+                while i < bannerItemViews.count {
+                    let view = bannerItemViews[i]
+                    view.center = CGPoint.init(x: self.frame.size.width/2.0 + CGFloat(i-1) * (itemWidth + space), y: self.frame.size.height/2.0)
+                    if(i == 1){
+                        view.layer.transform = CATransform3DScale(CATransform3DIdentity, maxScale, maxScale, 1)
+                    }else{
+                        view.layer.transform = CATransform3DIdentity
+                    }
+                    i=i+1
+                }
+                offset = .zero
+                
+                //load 4th item view
+                currentIndex = (currentIndex + 1)%itemCount
+                readyToLoadNewItemView = true
+//                item0.subviews.forEach{$0.removeFromSuperview()}
+//                let newIndex = (currentIndex + 2)%itemCount;
+//                let newView = loadViewForIndex(index: newIndex)
+//                newView.frame = item0.bounds
+//                item0.addSubview(newView)
+//                item0.index = newIndex
+            }
+            
+            waitCount = waitCount + 1
         }
-        
-        waitCount = waitCount + 1
         //
         CATransaction.commit()
-    }
-    
-    func transView(view : UIView, toIndex:Int){
-        CATransaction.begin()
-        
-        CATransaction.commit()
-        waitCount = 0
     }
     
     @objc func didPan(pan : UIPanGestureRecognizer){
         switch pan.state {
         case .began:
-            dragging = true
+//            dragging = true
             break;
         case .changed:
             let x = pan.translation(in: self).x
-            CATransaction.begin()
-            bannerItemViews.forEach({ (itemView) in
-                if itemView.index == currentIndex{
-                    itemView.layer.transform = CATransform3DTranslate(CATransform3DIdentity, itemView.layer.transform.m11 + x, 0, 0)
-                }else{
-                    itemView.layer.transform = CATransform3DTranslate(CATransform3DIdentity, itemView.layer.transform.m11 + x, 0, 0)
-                }
-            })
-            
-            
-            CATransaction.commit()
+            dragOffset.x = x
             break;
         case .failed:fallthrough
         case .cancelled:fallthrough
         case .ended:
             //TODO: pagingenable？？
+            
+            dragOffset = .zero
+            lastDragOffset = .zero
             dragging = false
             break;
         default:

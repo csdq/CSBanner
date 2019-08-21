@@ -19,6 +19,8 @@ class ViewController: UIViewController,CSBannerViewDatasource,CSBannerViewDelega
         bannerView.itemCount = 10
         bannerView.datasource = self
         bannerView.delegate = self
+        bannerView.itemWidth = UIScreen.main.bounds.size.width - 64.0 * 2.0;
+        bannerView.itemHeight = min(160.0,UIScreen.main.bounds.size.width * 0.5);
         bannerView.reloadData()
     }
     
@@ -43,6 +45,7 @@ class ViewController: UIViewController,CSBannerViewDatasource,CSBannerViewDelega
         lb.text = "\(index)"
         lb.font = .systemFont(ofSize: 40)
         lb.textAlignment = .center
+        lb.backgroundColor = .purple
         return lb
     }
     
