@@ -31,10 +31,14 @@ import UIKit
     /// number of item
     @objc public var itemCount : Int = 3
     @objc public var timeInterval : CGFloat = 5
-    @objc public var itemWidth : CGFloat = 260
-    @objc public var itemHeight : CGFloat = 140
-    @objc public var space : CGFloat = 44.0
-    
+    @objc public var itemWidth : CGFloat = UIScreen.main.bounds.size.width - 64.0
+    @objc public var itemHeight : CGFloat = (UIScreen.main.bounds.size.width - 64.0) * 9.0 / 16.0 + 16.0
+    @objc public var space : CGFloat = 8.0
+    var itemMargin : CGFloat {
+        get{
+          return space + itemWidth * (maxScale-1.0) / 2.0
+        }
+    }
     
     var itemViewCount : Int = 4
     
@@ -127,11 +131,12 @@ import UIKit
 //            bannerView.layer.shadowOffset = CGSize.init(width: 1.0, height: 1.0)
 //            bannerView.layer.borderWidth = 1.0
             containView.addSubview(bannerView)
+            let pageWidth = itemWidth + itemMargin
             if(itemViewCount - 1 == i){
-                bannerView.center = CGPoint.init(x: self.frame.size.width/2.0 - itemWidth - space, y: self.frame.size.height/2.0)
+                bannerView.center = CGPoint.init(x: self.frame.size.width/2.0 - pageWidth, y: self.frame.size.height/2.0)
                 bannerItemViews.insert(bannerView, at: 0)
             }else{
-                bannerView.center = CGPoint.init(x: (self.frame.size.width/2.0 + CGFloat(i) * (itemWidth + space)), y: self.frame.size.height/2.0)
+                bannerView.center = CGPoint.init(x: (self.frame.size.width/2.0 + CGFloat(i) * pageWidth), y: self.frame.size.height/2.0)
                 if(i == 0){
                     bannerView.layer.transform = CATransform3DScale(CATransform3DIdentity, maxScale, maxScale, 1)
                     containView.bringSubviewToFront(bannerView)
@@ -153,13 +158,16 @@ import UIKit
         //        let delta = easeInOut(time: (currentTime - lastTime))
         lastTime = currentTime
         
+        
+        var pageWidth = itemWidth + itemMargin
+        
         if(dragging){
             //
             let delta = dragOffset.x - lastDragOffset.x
             offset.x = offset.x + delta
             var transform = CATransform3DIdentity
             
-            let pageWidth = offset.x <= 0 ? (itemWidth + space) : -(itemWidth + space)
+            pageWidth = offset.x <= 0 ? pageWidth : -pageWidth
             
             if fabsf(Float(offset.x)) > Float(pageWidth){
                 
@@ -232,7 +240,7 @@ import UIKit
                 && waitCount <= (Int(timeInterval + animationTimeInterval) * 60)){
                 containView.bringSubviewToFront(bannerItemViews[1])
                 //animation
-                offset.x = offset.x - (itemWidth + space)/(animationTimeInterval * 60.0)
+                offset.x = offset.x - pageWidth/(animationTimeInterval * 60.0)
                 //min(2.0 , 1.0 + CGFloat(delta) * (itemWidth + space)/60.0)
                 upScale = min(maxScale,upScale + maxScale/(animationTimeInterval * 60.0))
                 downScale = max(minScale,downScale - (maxScale - minScale)/(animationTimeInterval * 60.0))
@@ -266,14 +274,14 @@ import UIKit
                 //
                 
                 let transform = item3.layer.transform
-                item0.center = CGPoint.init(x: item3.center.x + itemWidth + space, y: item3.center.y)
-                item0.layer.transform = CATransform3DTranslate(transform, transform.m11 + space + itemWidth, 0, 0)
+                item0.center = CGPoint.init(x: item3.center.x + pageWidth, y: item3.center.y)
+                item0.layer.transform = CATransform3DTranslate(transform, transform.m11 + pageWidth, 0, 0)
                 bannerItemViews = [item1,item2,item3,item0]
                 
                 var i = 0
                 while i < bannerItemViews.count {
                     let view = bannerItemViews[i]
-                    view.center = CGPoint.init(x: self.frame.size.width/2.0 + CGFloat(i-1) * (itemWidth + space), y: self.frame.size.height/2.0)
+                    view.center = CGPoint.init(x: self.frame.size.width/2.0 + CGFloat(i-1) * pageWidth, y: self.frame.size.height/2.0)
                     if(i == 1){
                         view.layer.transform = CATransform3DScale(CATransform3DIdentity, maxScale, maxScale, 1)
                     }else{
@@ -345,7 +353,7 @@ import UIKit
     }
     
     @objc public func reloadData(){
-        
+        offset = .zero
         /// reset item count
         
         //        containView.subviews.forEach {$0.removeFromSuperview()}
