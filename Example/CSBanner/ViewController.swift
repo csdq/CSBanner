@@ -9,17 +9,19 @@
 import UIKit
 import CSBanner
 class ViewController: UIViewController,CSBannerViewDatasource,CSBannerViewDelegate {
-    @IBOutlet weak var bannerView: CSBannerView!
+    var bannerView: CSBannerView = CSBannerView.init()
     
     let testView = UIView(frame: CGRect.init(x: 0, y: 300, width: 20, height: 20))
     let delta = 1
     var timer : Timer?
     override func viewDidLoad() {
         super.viewDidLoad()
+        view.addSubview(bannerView)
+        bannerView.frame = CGRect.init(x: 0, y: 80, width: UIScreen.main.bounds.size.width, height: 200)
         bannerView.itemCount = 10
         bannerView.datasource = self
         bannerView.delegate = self
-        bannerView.itemWidth = UIScreen.main.bounds.size.width - 64.0 * 2.0;
+        bannerView.itemWidth = UIScreen.main.bounds.size.width - 54.0 * 2.0;
         bannerView.itemHeight = min(160.0,UIScreen.main.bounds.size.width * 0.5);
         bannerView.reloadData()
     }
@@ -45,7 +47,8 @@ class ViewController: UIViewController,CSBannerViewDatasource,CSBannerViewDelega
         lb.text = "\(index)"
         lb.font = .systemFont(ofSize: 40)
         lb.textAlignment = .center
-        lb.backgroundColor = .purple
+        lb.textColor = .white
+        lb.backgroundColor = [.purple,.red,.yellow,.orange,.gray,.brown,.blue,.magenta,.cyan,.black][index]
         return lb
     }
     

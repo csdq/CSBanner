@@ -20,44 +20,8 @@
                     <view key="view" contentMode="scaleToFill" id="kh9-bI-dsS">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                        <subviews>
-                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Dqg-lf-rCf" customClass="CSBannerView" customModule="CSBanner">
-                                <rect key="frame" x="0.0" y="20" width="375" height="200"/>
-                                <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                <constraints>
-                                    <constraint firstAttribute="height" constant="200" id="TgK-mt-Fj3"/>
-                                </constraints>
-                            </view>
-                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="HzV-j0-h9M">
-                                <rect key="frame" x="200" y="300" width="50" height="30"/>
-                                <state key="normal" title="Restart"/>
-                                <connections>
-                                    <action selector="restartScroll:" destination="vXZ-lx-hvc" eventType="touchUpInside" id="Poz-4H-AJZ"/>
-                                </connections>
-                            </button>
-                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="ekM-dT-IAU">
-                                <rect key="frame" x="134" y="300" width="32" height="30"/>
-                                <state key="normal" title="Stop"/>
-                                <connections>
-                                    <action selector="stopScroll:" destination="vXZ-lx-hvc" eventType="touchUpInside" id="aBY-do-zo0"/>
-                                </connections>
-                            </button>
-                        </subviews>
                         <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                        <constraints>
-                            <constraint firstItem="HzV-j0-h9M" firstAttribute="centerY" secondItem="ekM-dT-IAU" secondAttribute="centerY" id="2pr-5M-GXl"/>
-                            <constraint firstItem="Dqg-lf-rCf" firstAttribute="top" secondItem="jyV-Pf-zRb" secondAttribute="bottom" id="9Et-1f-x2j"/>
-                            <constraint firstAttribute="trailing" secondItem="Dqg-lf-rCf" secondAttribute="trailing" id="L9L-HD-lHv"/>
-                            <constraint firstItem="HzV-j0-h9M" firstAttribute="centerX" secondItem="kh9-bI-dsS" secondAttribute="centerX" multiplier="1.2" id="QrD-KF-QIH"/>
-                            <constraint firstItem="HzV-j0-h9M" firstAttribute="top" secondItem="Dqg-lf-rCf" secondAttribute="bottom" constant="80" id="WmQ-Sp-TOZ"/>
-                            <constraint firstItem="ekM-dT-IAU" firstAttribute="centerX" secondItem="kh9-bI-dsS" secondAttribute="centerX" multiplier="0.8" id="bjb-mN-ScZ"/>
-                            <constraint firstItem="Dqg-lf-rCf" firstAttribute="leading" secondItem="kh9-bI-dsS" secondAttribute="leading" id="kYf-ea-41i"/>
-                            <constraint firstItem="ekM-dT-IAU" firstAttribute="top" secondItem="Dqg-lf-rCf" secondAttribute="bottom" constant="80" id="nW2-Wk-4Sk"/>
-                        </constraints>
                     </view>
-                    <connections>
-                        <outlet property="bannerView" destination="Dqg-lf-rCf" id="KQY-tW-eev"/>
-                    </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="x5A-6p-PRh" sceneMemberID="firstResponder"/>
             </objects>
