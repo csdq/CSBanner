@@ -1,5 +1,4 @@
 use_frameworks!
-
 target 'CSBanner_Example' do
   pod 'CSBanner', :path => '../'
 

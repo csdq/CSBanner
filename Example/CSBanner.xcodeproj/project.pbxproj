@@ -286,7 +286,7 @@
 			files = (
 			);
 			inputPaths = (
-				"${SRCROOT}/Pods/Target Support Files/Pods-CSBanner_Example/Pods-CSBanner_Example-frameworks.sh",
+				"${PODS_ROOT}/Target Support Files/Pods-CSBanner_Example/Pods-CSBanner_Example-frameworks.sh",
 				"${BUILT_PRODUCTS_DIR}/CSBanner/CSBanner.framework",
 			);
 			name = "[CP] Embed Pods Frameworks";
@@ -295,7 +295,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-CSBanner_Example/Pods-CSBanner_Example-frameworks.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-CSBanner_Example/Pods-CSBanner_Example-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		A2734FFCA87A2C005EAAA021 /* [CP] Check Pods Manifest.lock */ = {

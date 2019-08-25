@@ -133,7 +133,7 @@ import UIKit
                     bannerView.center = CGPoint.init(x: (self.frame.size.width/2.0 + CGFloat(i) * pageWidth), y: self.frame.size.height/2.0)
                     if(i == 0){
                         bannerView.layer.transform = CATransform3DScale(CATransform3DIdentity, maxScale, maxScale, 1)
-                        containView.bringSubviewToFront(bannerView)
+                        containView.bringSubview(toFront: bannerView)
                     }
                     itemViews.append(bannerView)
                 }
@@ -269,7 +269,7 @@ import UIKit
                 //do nothing
             }else if(waitCount > Int(timeInterval * 60.0)
                 && waitCount <= (Int(timeInterval + animationTimeInterval) * 60)){
-                containView.bringSubviewToFront(itemViews.last!)
+                containView.bringSubview(toFront: itemViews.last!)
                 //animation
                 offset.x = offset.x - pageWidth/CGFloat(animationTimeInterval * 60.0)
                 upScale = min(maxScale,upScale + maxScale/CGFloat(animationTimeInterval * 60.0))
@@ -336,7 +336,7 @@ import UIKit
                 currentIndex = (itemCount + currentIndex - 1)%itemCount
             }
         }
-        containView.bringSubviewToFront(itemViews[1])
+        containView.bringSubview(toFront: itemViews[1])
         
         //        UIView.animate(withDuration:(max(0.2,TimeInterval(1.0 - fabsf(Float(offset.x/pageWidth)))) * animationTimeInterval), animations: {
         UIView.animate(withDuration:0.1, animations: {
@@ -430,8 +430,8 @@ import UIKit
             
         }else{
             timer = Timer.scheduledTimer(timeInterval: 1.0/60.0, target: self, selector: #selector(updateItemViews), userInfo: nil, repeats: true)
-            RunLoop.main.add(timer!, forMode: .default)
-            RunLoop.main.add(timer!, forMode: .tracking)
+            RunLoop.main.add(timer!, forMode: RunLoopMode.defaultRunLoopMode)
+            RunLoop.main.add(timer!, forMode: RunLoopMode.UITrackingRunLoopMode)
         }
     }
     

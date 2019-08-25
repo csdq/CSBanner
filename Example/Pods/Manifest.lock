@@ -1,5 +1,5 @@
 PODS:
-  - CSBanner (1.0.6)
+  - CSBanner (2.0.0)
 
 DEPENDENCIES:
   - CSBanner (from `../`)
@@ -9,8 +9,8 @@ EXTERNAL SOURCES:
     :path: "../"
 
 SPEC CHECKSUMS:
-  CSBanner: 794ec4c6ab0df1468f220281b165a4db0470ec61
+  CSBanner: 37f631fdaece183db217f1bf36bff66cf9f94232
 
 PODFILE CHECKSUM: adb15d10332422f55084061ba6171328c849c33a
 
-COCOAPODS: 1.5.3
+COCOAPODS: 1.7.5
