@@ -21,7 +21,8 @@ class ViewController: UIViewController,CSBannerViewDatasource,CSBannerViewDelega
         bannerView.itemCount = 10
         bannerView.datasource = self
         bannerView.delegate = self
-        bannerView.itemWidth = UIScreen.main.bounds.size.width - 54.0 * 2.0;
+        bannerView.itemWidth = UIScreen.main.bounds.size.width - 50 * 2.0;
+        bannerView.space = -58;
         bannerView.itemHeight = min(160.0,UIScreen.main.bounds.size.width * 0.5);
         bannerView.reloadData()
     }

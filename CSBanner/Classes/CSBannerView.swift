@@ -56,7 +56,7 @@ import UIKit
     
     @objc var currentIndex : Int = 0
     
-    var animationTimeInterval : TimeInterval = 1.0
+    @objc var animationTimeInterval : TimeInterval = 0.7
     
     var waitCount : Int = 0
     
@@ -133,12 +133,13 @@ import UIKit
                     bannerView.center = CGPoint.init(x: (self.frame.size.width/2.0 + CGFloat(i) * pageWidth), y: self.frame.size.height/2.0)
                     if(i == 0){
                         bannerView.layer.transform = CATransform3DScale(CATransform3DIdentity, maxScale, maxScale, 1)
-                        containView.bringSubview(toFront: bannerView)
                     }
                     itemViews.append(bannerView)
                 }
                 i += 1
             }
+            containView.bringSubview(toFront: itemViews[2])
+            containView.bringSubview(toFront: itemViews[1])
         }
     }
     
@@ -155,12 +156,11 @@ import UIKit
             downScale = max(minScale,(toLeft ? 1.0 : -1.0) * (maxScale - minScale) / pageWidth * offset.x + maxScale)
             upScale = min(maxScale, (toLeft ? -1.0 : 1.0) * (maxScale - minScale) / pageWidth * offset.x + minScale)
             
-            
-            
             if fabsf(Float(offset.x)) + Float(pageWidth) > Float(self.frame.size.width){
                 if !itemPreMoved {//pre move
                     if toLeft {//left 1st --> right
                         itemViews.append(itemViews.removeFirst())
+                        containView.bringSubview(toFront: itemViews[1])
                         itemViews.last!.center = CGPoint.init(x: self.frame.size.width/2.0 + pageWidth, y: self.frame.size.height/2.0)
                         itemViews.last!.subviews.forEach{$0.removeFromSuperview()}
                         let newIndex = (currentIndex+2)%itemCount;
@@ -177,6 +177,7 @@ import UIKit
                         
                     }else{//right --> left
                         itemViews.insert(itemViews.removeLast(), at: 0)
+                        containView.bringSubview(toFront: itemViews[1])
                         itemViews.first!.center = CGPoint.init(x: self.frame.size.width/2.0 - pageWidth, y: self.frame.size.height/2.0)
                         itemViews.first!.subviews.forEach{$0.removeFromSuperview()}
                         let newIndex = (itemCount + currentIndex-2)%itemCount;
@@ -208,6 +209,7 @@ import UIKit
                     }
                 }
             }else{
+                containView.bringSubview(toFront: itemViews[1])
                 // normal
                 if itemPreMoved{
                     //back to origin
@@ -268,8 +270,8 @@ import UIKit
             if(waitCount <= Int(timeInterval * 60.0)){
                 //do nothing
             }else if(waitCount > Int(timeInterval * 60.0)
-                && waitCount <= (Int(timeInterval + animationTimeInterval) * 60)){
-                containView.bringSubview(toFront: itemViews.last!)
+                && waitCount <= Int((timeInterval + animationTimeInterval) * 60.0)){
+                self.isUserInteractionEnabled = false
                 //animation
                 offset.x = offset.x - pageWidth/CGFloat(animationTimeInterval * 60.0)
                 upScale = min(maxScale,upScale + maxScale/CGFloat(animationTimeInterval * 60.0))
@@ -287,8 +289,8 @@ import UIKit
                         itemViews.last!.index = newIndex
                         itemViews.last!.center = CGPoint.init(x: self.frame.size.width/2.0 + pageWidth, y: self.frame.size.height/2.0)
                         itemViewHasMoved = true
+                        containView.bringSubview(toFront: itemViews[1])
                     }
-                    
                     itemViews[0].layer.transform = CATransform3DTranslate(CATransform3DScale(CATransform3DIdentity, downScale, downScale, 1) , offset.x / downScale, 0, 0)
                     itemViews[1].layer.transform = CATransform3DTranslate(CATransform3DScale(CATransform3DIdentity, upScale, upScale, 1), offset.x/upScale, 0, 0)
                     itemViews[2].layer.transform = CATransform3DTranslate(CATransform3DIdentity, offset.x + pageWidth , 0, 0)
@@ -310,13 +312,14 @@ import UIKit
                     }
                     i=i+1
                 }
+                containView.bringSubview(toFront: itemViews[1])
                 waitCount = -1;
                 upScale = minScale
                 downScale = maxScale
                 offset = .zero
                 currentIndex = (currentIndex + 1)%itemCount
-                print("current \(currentIndex)")
                 itemViewHasMoved = false
+                self.isUserInteractionEnabled = true
             }
             
             waitCount = waitCount + 1
@@ -426,6 +429,9 @@ import UIKit
     }
     
     func startAnimation(){
+        if !autoScroll{
+            return
+        }
         if let _ = timer {
             
         }else{
