@@ -75,7 +75,9 @@ import UIKit
     
     var itemPreMoved : Bool = false
     
-    var itemViewHasMoved : Bool = false;
+    var itemViewHasMoved : Bool = false
+    
+    var itemAdjusting : Bool = false
     
     public required init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
@@ -147,8 +149,7 @@ import UIKit
         CATransaction.begin()
         
         let pageWidth = itemWidth + itemMargin
-        
-        if(dragging){
+        if dragging {
             //
             let delta = dragOffset.x - lastDragOffset.x
             offset.x = offset.x + delta
@@ -271,7 +272,7 @@ import UIKit
                 //do nothing
             }else if(waitCount > Int(timeInterval * 60.0)
                 && waitCount <= Int((timeInterval + animationTimeInterval) * 60.0)){
-                self.isUserInteractionEnabled = false
+                isUserInteractionEnabled = false
                 //animation
                 offset.x = offset.x - pageWidth/CGFloat(animationTimeInterval * 60.0)
                 upScale = min(maxScale,upScale + maxScale/CGFloat(animationTimeInterval * 60.0))
@@ -319,7 +320,7 @@ import UIKit
                 offset = .zero
                 currentIndex = (currentIndex + 1)%itemCount
                 itemViewHasMoved = false
-                self.isUserInteractionEnabled = true
+                isUserInteractionEnabled = true
             }
             
             waitCount = waitCount + 1
@@ -340,9 +341,11 @@ import UIKit
             }
         }
         containView.bringSubview(toFront: itemViews[1])
+
         
         //        UIView.animate(withDuration:(max(0.2,TimeInterval(1.0 - fabsf(Float(offset.x/pageWidth)))) * animationTimeInterval), animations: {
-        UIView.animate(withDuration:0.1, animations: {
+//        UIView.animate(withDuration:0.1, animations: {
+
             var i = 0
             while i < self.itemViews.count {
                 let view = self.itemViews[i]
@@ -354,13 +357,13 @@ import UIKit
                 }
                 i=i+1
             }
-        }) { (finished) in
+//        }) { (finished) in
             self.waitCount = -1
             self.offset = .zero
             self.dragOffset = .zero
             self.lastDragOffset = .zero
             self.startAnimation()
-        }
+//        }
     }
     
     @objc func didPan(pan : UIPanGestureRecognizer){
@@ -378,9 +381,10 @@ import UIKit
         case .failed:fallthrough
         case .cancelled:fallthrough
         case .ended:
-            transformView()
             dragging = false
             itemPreMoved = false
+//            itemAdjusting = true
+            transformView()
             break;
         default:
             break;
@@ -389,7 +393,6 @@ import UIKit
     
     @objc func didTap(tap : UITapGestureRecognizer){
         if let _ = delegate{
-            //TODO:确定 index
             let pt = tap.location(in: containView)
             if let itemView = itemViewAtPoint(pt: pt){
                 delegate?.didSelectItemForIndex(index: itemView.index)
