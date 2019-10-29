@@ -127,6 +127,7 @@ import UIKit
                 bannerView.index = i;
                 bannerView.addSubview(view)
                 bannerView.frame = frame
+                view.frame = frame
                 containView.addSubview(bannerView)
                 if(itemViewCount - 1 == i){
                     bannerView.center = CGPoint.init(x: self.frame.size.width/2.0 - pageWidth, y: self.frame.size.height/2.0)
