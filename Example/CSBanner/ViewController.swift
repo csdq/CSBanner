@@ -32,16 +32,6 @@ class ViewController: UIViewController,CSBannerViewDatasource,CSBannerViewDelega
         
         // Dispose of any resources that can be recreated.
     }
-    
-    
-    @IBAction func stopScroll(_ sender: Any) {
-
-    }
-    
-    @IBAction func restartScroll(_ sender: Any) {
-        
-    }
-    
     //
     func itemViewForIndex(index: Int) -> UIView {
         let lb = UILabel.init()
